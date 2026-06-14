@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Porra Mundial 2026</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#06152b;color:#eaf2ff}
+header{background:#020817;padding:20px 30px;border-bottom:1px solid #1d4ed8}
+nav{display:flex;gap:10px;align-items:center;background:#0b1f3a;padding:12px 25px;position:sticky;top:0;z-index:10;flex-wrap:wrap}
+button{background:#1d4ed8;color:white;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
+button:disabled{background:#475569;cursor:not-allowed}
+.active,.faseActiva{background:#38bdf8!important;color:#00111f!important}
+.user{margin-left:auto;font-weight:bold}
+.container{max-width:1200px;margin:auto;padding:25px}
+.card{background:#0f2a4a;border:1px solid #1e40af;border-radius:16px;padding:20px;margin:18px 0;box-shadow:0 8px 20px #0005}
+input,select{background:#071a33;color:white;border:1px solid #3b82f6;border-radius:8px;padding:8px;margin:4px}
+input:disabled,select:disabled{opacity:.55}
+.score{width:55px}
+.match{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:15px}
+.stat{background:#102f55;border:1px solid #2563eb;border-radius:14px;padding:18px;text-align:center}
+.big{font-size:25px;font-weight:bold;color:#7dd3fc}
+table{width:100%;border-collapse:collapse}
+td,th{border-bottom:1px solid #1e40af;padding:12px;text-align:left}
+th{background:#1e3a8a;color:white;text-transform:uppercase;letter-spacing:1px}
+footer{text-align:center;padding:25px;color:#93c5fd}
+.table-wrap{overflow-x:auto}
+.error-box{max-width:700px;margin:50px auto;background:#7f1d1d;color:white;padding:24px;border-radius:14px}
+.ok{color:#86efac;font-weight:bold}
+.closed{color:#f87171;font-weight:bold}
+.warn{color:#fbbf24;font-weight:bold}
+@media(max-width:800px){
+ .grid{grid-template-columns:1fr}
+ .user{margin-left:0}
+ h1{font-size:34px!important}
+ .container{padding:15px}
+ td,th{padding:9px}
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+ <div class="container">
+  <div class="card" style="text-align:center">
+   <h1>Porra Mundial 2026</h1>
+   <p>Cargando...</p>
+  </div>
+ </div>
+</div>
+
+<script>
+window.addEventListener("error",function(event){
+ const root=document.getElementById("app");
+ if(root){
+   root.innerHTML=`
+   <div class="error-box">
+    <h2>No se pudo abrir la porra</h2>
+    <p>Se ha producido un error al cargar el código.</p>
+    <p>${String(event.message||"Error desconocido")}</p>
+   </div>`;
+ }
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL="https://rkqjccuwhbyelmkghvhj.supabase.co";
+const SUPABASE_KEY="sb_publishable_-N2KfzHOfgMS9pjfsS4SGg_rmt5CWYo";
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const partidosGrupo=[
+["Grupo A","México","Sudáfrica","11 junio","21:00"],
+["Grupo A","Corea del Sur","Rep. Checa","12 junio","04:00"],
+["Grupo B","Canadá","Bosnia","12 junio","21:00"],
+["Grupo D","Estados Unidos","Paraguay","13 junio","03:00"],
+["Grupo B","Qatar","Suiza","13 junio","21:00"],
+["Grupo C","Brasil","Marruecos","14 junio","00:00"],
+["Grupo C","Haití","Escocia","14 junio","03:00"],
+["Grupo D","Australia","Turquía","14 junio","06:00"],
+["Grupo E","Alemania","Curazao","14 junio","19:00"],
+["Grupo F","Países Bajos","Japón","14 junio","22:00"],
+["Grupo E","Costa de Marfil","Ecuador","15 junio","01:00"],
+["Grupo F","Suecia","Túnez","15 junio","04:00"],
+["Grupo H","España","Cabo Verde","15 junio","19:00"],
+["Grupo G","Bélgica","Egipto","16 junio","00:00"],
+["Grupo H","Arabia Saudí","Uruguay","16 junio","00:00"],
+["Grupo G","Irán","Nueva Zelanda","16 junio","06:00"],
+["Grupo I","Francia","Senegal","16 junio","21:00"],
+["Grupo I","Irak","Noruega","17 junio","00:00"],
+["Grupo J","Argentina","Argelia","17 junio","03:00"],
+["Grupo J","Austria","Jordania","17 junio","06:00"],
+["Grupo K","Portugal","RD Congo","17 junio","19:00"],
+["Grupo L","Inglaterra","Croacia","17 junio","22:00"],
+["Grupo L","Ghana","Panamá","18 junio","01:00"],
+["Grupo K","Uzbekistán","Colombia","18 junio","04:00"],
+["Grupo A","Rep. Checa","Sudáfrica","18 junio","18:00"],
+["Grupo B","Suiza","Bosnia","18 junio","21:00"],
+["Grupo B","Canadá","Qatar","19 junio","00:00"],
+["Grupo A","México","Corea del Sur","19 junio","05:00"],
+["Grupo D","Estados Unidos","Australia","19 junio","21:00"],
+["Grupo C","Escocia","Marruecos","20 junio","00:00"],
+["Grupo C","Brasil","Haití","20 junio","03:00"],
+["Grupo D","Turquía","Paraguay","20 junio","06:00"],
+["Grupo F","Países Bajos","Suecia","20 junio","19:00"],
+["Grupo E","Alemania","Costa de Marfil","20 junio","22:00"],
+["Grupo E","Ecuador","Curazao","21 junio","02:00"],
+["Grupo F","Túnez","Japón","21 junio","06:00"],
+["Grupo H","España","Arabia Saudí","21 junio","18:00"],
+["Grupo G","Bélgica","Irán","21 junio","21:00"],
+["Grupo H","Uruguay","Cabo Verde","22 junio","00:00"],
+["Grupo G","Nueva Zelanda","Egipto","22 junio","03:00"],
+["Grupo J","Argentina","Austria","22 junio","19:00"],
+["Grupo I","Francia","Irak","22 junio","23:00"],
+["Grupo I","Noruega","Senegal","23 junio","02:00"],
+["Grupo J","Jordania","Argelia","23 junio","05:00"],
+["Grupo K","Portugal","Uzbekistán","23 junio","19:00"],
+["Grupo L","Inglaterra","Ghana","23 junio","22:00"],
+["Grupo L","Panamá","Croacia","24 junio","01:00"],
+["Grupo K","Colombia","RD Congo","24 junio","04:00"],
+["Grupo B","Suiza","Canadá","24 junio","21:00"],
+["Grupo B","Bosnia","Qatar","24 junio","21:00"],
+["Grupo C","Escocia","Brasil","25 junio","00:00"],
+["Grupo C","Marruecos","Haití","25 junio","00:00"],
+["Grupo A","Rep. Checa","México","25 junio","03:00"],
+["Grupo A","Sudáfrica","Corea del Sur","25 junio","03:00"],
+["Grupo E","Ecuador","Alemania","25 junio","22:00"],
+["Grupo E","Curazao","Costa de Marfil","25 junio","22:00"],
+["Grupo F","Japón","Suecia","26 junio","01:00"],
+["Grupo F","Túnez","Países Bajos","26 junio","01:00"],
+["Grupo D","Turquía","Estados Unidos","26 junio","04:00"],
+["Grupo D","Paraguay","Australia","26 junio","04:00"],
+["Grupo I","Noruega","Francia","26 junio","21:00"],
+["Grupo I","Senegal","Irak","26 junio","21:00"],
+["Grupo H","Cabo Verde","Arabia Saudí","27 junio","02:00"],
+["Grupo H","Uruguay","España","27 junio","02:00"],
+["Grupo G","Egipto","Irán","27 junio","05:00"],
+["Grupo G","Nueva Zelanda","Bélgica","27 junio","05:00"],
+["Grupo L","Panamá","Inglaterra","27 junio","23:00"],
+["Grupo L","Croacia","Ghana","27 junio","23:00"],
+["Grupo K","Colombia","Portugal","28 junio","01:30"],
+["Grupo K","RD Congo","Uzbekistán","28 junio","01:30"],
+["Grupo J","Argelia","Austria","28 junio","04:00"],
+["Grupo J","Jordania","Argentina","28 junio","04:00"]
+];
+
+const grupos={};
+partidosGrupo.forEach(p=>{
+ if(!grupos[p[0]])grupos[p[0]]=[];
+ if(!grupos[p[0]].includes(p[1]))grupos[p[0]].push(p[1]);
+ if(!grupos[p[0]].includes(p[2]))grupos[p[0]].push(p[2]);
+});
+
+const fases=["Grupos","Mejores terceros","Dieciseisavos","Octavos de Final","Cuartos de Final","Semifinales","Final"];
+
+let pantalla="login";
+let faseApuesta="Grupos";
+let grupoActual="Grupo A";
+
+let usuarioActual=null;
+let usuariosCache={};
+let apuestasCache={};
+let resultadosCache={};
+let clasificacionCache=[];
+
+function usuarios(){return usuariosCache}
+function apuestas(){return apuestasCache}
+function keyPartido(p){return p[0]+"-"+p[1]+"-"+p[2]}
+
+async function cargarDatosCompartidos(){
+ if(!usuarioActual)return;
+
+ const [perfiles,misApuestas,resultados,clasificacion]=await Promise.all([
+   supabaseClient.from("profiles").select("id,apodo,estado,is_admin"),
+   supabaseClient.from("bets").select("key,value").eq("user_id",usuarioActual.id),
+   supabaseClient.from("results").select("key,value"),
+   supabaseClient.rpc("get_leaderboard")
+ ]);
+
+ const error=perfiles.error||misApuestas.error||resultados.error||clasificacion.error;
+ if(error)throw error;
+
+ usuariosCache=Object.fromEntries(
+   (perfiles.data||[]).map(u=>[u.id,u])
+ );
+ apuestasCache={
+   [usuarioActual.id]:Object.fromEntries(
+     (misApuestas.data||[]).map(a=>[a.key,a.value])
+   )
+ };
+ resultadosCache=Object.fromEntries(
+   (resultados.data||[]).map(r=>[r.key,r.value])
+ );
+ clasificacionCache=(clasificacion.data||[]).map(u=>({
+   ...u,
+   correo:u.id
+ }));
+}
+
+async function cargarUsuarioSesion(){
+ const {data:{session}}=await supabaseClient.auth.getSession();
+ if(!session)return false;
+
+ const perfilCreado=await supabaseClient.rpc("ensure_my_profile");
+ if(perfilCreado.error)throw perfilCreado.error;
+
+ const {data:perfil,error}=await supabaseClient
+   .from("profiles")
+   .select("id,apodo,estado,is_admin")
+   .eq("id",session.user.id)
+   .single();
+
+ if(error)throw error;
+
+ usuarioActual={
+   id:perfil.id,
+   correo:perfil.id,
+   email:session.user.email,
+   apodo:perfil.apodo,
+   estado:perfil.estado||"Activo",
+   admin:Boolean(perfil.is_admin)
+ };
+ await cargarDatosCompartidos();
+ return true;
+}
+
+function fechaHoraObj(fecha,hora){
+ const meses={junio:5};
+ const partes=fecha.split(" ");
+ const dia=Number(partes[0]);
+ const mes=meses[partes[1].toLowerCase()];
+ const hm=hora.split(":").map(Number);
+ return new Date(2026,mes,dia,hm[0],hm[1]);
+}
+
+function formatearCierre(fecha){
+ const dia=fecha.getDate();
+ const mes="junio";
+ const h=String(fecha.getHours()).padStart(2,"0");
+ const m=String(fecha.getMinutes()).padStart(2,"0");
+ return `${dia} ${mes} a las ${h}:${m}`;
+}
+
+function cierrePartido(p){
+ const inicio=fechaHoraObj(p[3],p[4]);
+ return new Date(inicio.getTime()-2*60*60*1000);
+}
+
+function partidoForzadoAbierto(key){
+ return localStorage.getItem("override-partido-"+key)==="abierto";
+}
+
+function tablaForzadaAbierta(grupo){
+ return localStorage.getItem("override-tabla-"+grupo)==="abierta";
+}
+
+function partidoCerrado(p){
+ const key=keyPartido(p);
+ if(partidoForzadoAbierto(key)) return false;
+ return new Date()>=cierrePartido(p);
+}
+
+function primerPartidoGrupo(grupo){
+ return partidosGrupo.filter(p=>p[0]===grupo)
+ .sort((a,b)=>fechaHoraObj(a[3],a[4])-fechaHoraObj(b[3],b[4]))[0];
+}
+
+function cierreTablaGrupo(grupo){
+ const p=primerPartidoGrupo(grupo);
+ const inicio=fechaHoraObj(p[3],p[4]);
+ return new Date(inicio.getTime()-2*60*60*1000);
+}
+
+function tablaGrupoCerrada(grupo){
+ if(tablaForzadaAbierta(grupo)) return false;
+ return new Date()>=cierreTablaGrupo(grupo);
+}
+
+async function setApuesta(k,v){
+ if(!usuarioActual || usuarioActual.admin)return;
+ apuestasCache[usuarioActual.id]??={};
+ apuestasCache[usuarioActual.id][k]=String(v);
+
+ const {error}=await supabaseClient.from("bets").upsert({
+   user_id:usuarioActual.id,
+   key:k,
+   value:String(v)
+ },{onConflict:"user_id,key"});
+
+ if(error)alert("No se pudo guardar la apuesta: "+error.message);
+}
+
+function getApuesta(k){
+ if(!usuarioActual)return "";
+ return apuestas()?.[usuarioActual.id]?.[k]||"";
+}
+
+async function setResultado(k,v){
+ if(!usuarioActual?.admin)return;
+ resultadosCache[k]=String(v);
+
+ const {error}=await supabaseClient.from("results").upsert({
+   key:k,
+   value:String(v)
+ },{onConflict:"key"});
+
+ if(error){
+   alert("No se pudo guardar el resultado: "+error.message);
+   return;
+ }
+
+ const clasificacion=await supabaseClient.rpc("get_leaderboard");
+ if(!clasificacion.error){
+   clasificacionCache=(clasificacion.data||[]).map(u=>({...u,correo:u.id}));
+ }
+}
+
+function getResultado(k){
+ return resultadosCache[k]||"";
+}
+
+function togglePartido(key){
+ const actual=localStorage.getItem("override-partido-"+key);
+ if(actual==="abierto")localStorage.removeItem("override-partido-"+key);
+ else localStorage.setItem("override-partido-"+key,"abierto");
+ render();
+}
+
+function toggleTabla(grupo){
+ const actual=localStorage.getItem("override-tabla-"+grupo);
+ if(actual==="abierta")localStorage.removeItem("override-tabla-"+grupo);
+ else localStorage.setItem("override-tabla-"+grupo,"abierta");
+ render();
+}
+
+async function registrar(){
+ let apodo=document.getElementById("regApodo").value.trim();
+ let correo=document.getElementById("regCorreo").value.trim().toLowerCase();
+ let pass=document.getElementById("regPass").value.trim();
+
+ if(!apodo||!correo||!pass){
+   alert("Rellena apodo, correo y contraseña");
+   return;
+ }
+
+ const {data,error}=await supabaseClient.auth.signUp({
+   email:correo,
+   password:pass,
+   options:{data:{apodo}}
+ });
+
+ if(error){
+   alert("No se pudo crear la cuenta: "+error.message);
+   return;
+ }
+
+ if(!data.session){
+   alert("Cuenta creada. Revisa tu correo para confirmarla y después inicia sesión.");
+   return;
+ }
+
+ await cargarUsuarioSesion();
+ pantalla=usuarioActual.admin?"resultados":"inicio";
+ render();
+}
+
+async function iniciarSesion(){
+ let login=document.getElementById("loginCorreo").value.trim().toLowerCase();
+ let pass=document.getElementById("loginPass").value.trim();
+
+ const {error}=await supabaseClient.auth.signInWithPassword({
+   email:login,
+   password:pass
+ });
+
+ if(error){
+   alert("Correo o contraseña incorrectos.");
+   return;
+ }
+
+ await cargarUsuarioSesion();
+ pantalla=usuarioActual.admin?"resultados":"inicio";
+ render();
+}
+
+async function salir(){
+ await supabaseClient.auth.signOut();
+ usuarioActual=null;
+ usuariosCache={};
+ apuestasCache={};
+ resultadosCache={};
+ clasificacionCache=[];
+ pantalla="login";
+ render();
+}
+
+function layout(c){
+ if(usuarioActual && usuarioActual.admin){
+   return `
+   <header><h1>Panel Administrador</h1></header>
+   <nav>
+   <button onclick="pantalla='resultados';render()" class="${pantalla==='resultados'?'active':''}">📋 Resultados</button>
+   <button onclick="pantalla='habilitar';render()" class="${pantalla==='habilitar'?'active':''}">🔓 Habilitar</button>
+   <button onclick="pantalla='clasificacion';render()" class="${pantalla==='clasificacion'?'active':''}">🏆 Clasificación general</button>
+   <span class="user">Admin</span>
+   <button onclick="salir()">Salir</button>
+   </nav>
+   <div class="container">${c}</div>
+   <footer>© 2026 Porra Mundial. Desarrollado por Luis Rodríguez Villares.</footer>`;
+ }
+
+ return `
+ <header><h1>Mundial</h1></header>
+ <nav>
+ <b>PORRA MUNDIAL 2026</b>
+ <button onclick="pantalla='inicio';render()" class="${pantalla==='inicio'?'active':''}">Inicio</button>
+ <button onclick="pantalla='partidos';render()" class="${pantalla==='partidos'?'active':''}">Partidos</button>
+ <button onclick="pantalla='apostar';render()" class="${pantalla==='apostar'?'active':''}">Apostar</button>
+ <button onclick="pantalla='mis';render()" class="${pantalla==='mis'?'active':''}">Mis Apuestas</button>
+ <button onclick="pantalla='clasificacion';render()" class="${pantalla==='clasificacion'?'active':''}">Clasificación general</button>
+ <span class="user">${usuarioActual.apodo}</span>
+ <button onclick="salir()">Salir</button>
+ </nav>
+ <div class="container">${c}</div>
+ <footer>© 2026 Porra Mundial. Desarrollado por Luis Rodríguez Villares.</footer>`;
+}
+
+function vistaLogin(){
+ return `
+ <div class="container">
+
+   <div style="text-align:center;margin-bottom:35px">
+     <h1 style="font-size:52px;color:#38bdf8;margin:0">
+       🏆 PORRA MUNDIAL 2026
+     </h1>
+
+     <p style="font-size:20px;color:#93c5fd">
+       Compite, predice y gana el premio definitivo
+     </p>
+   </div>
+
+   <div class="card" style="max-width:600px;margin:auto">
+
+     <div style="display:flex;gap:10px;margin-bottom:20px">
+
+       <button
+         style="flex:1"
+         onclick="
+           document.getElementById('loginTab').style.display='block';
+           document.getElementById('registerTab').style.display='none';
+         "
+       >
+         Iniciar Sesión
+       </button>
+
+       <button
+         style="flex:1"
+         onclick="
+           document.getElementById('loginTab').style.display='none';
+           document.getElementById('registerTab').style.display='block';
+         "
+       >
+         Registrarse
+       </button>
+
+     </div>
+
+     <div id="loginTab">
+
+       <label>Correo Electrónico</label><br>
+
+       <input
+         id="loginCorreo"
+         placeholder="tu@correo.com"
+         style="width:100%"
+       >
+
+       <br><br>
+
+       <label>Contraseña</label><br>
+
+       <input
+         id="loginPass"
+         type="password"
+         placeholder="••••••••"
+         style="width:100%"
+       >
+
+       <br><br>
+
+       <button
+         onclick="iniciarSesion()"
+         style="width:100%"
+       >
+         Entrar a la Porra
+       </button>
+
+     </div>
+
+     <div id="registerTab" style="display:none">
+
+       <label>Apodo</label><br>
+
+       <input
+         id="regApodo"
+         placeholder="Tu apodo"
+         style="width:100%"
+       >
+
+       <br><br>
+
+       <label>Correo Electrónico</label><br>
+
+       <input
+         id="regCorreo"
+         placeholder="tu@correo.com"
+         style="width:100%"
+       >
+
+       <br><br>
+
+       <label>Contraseña</label><br>
+
+       <input
+         id="regPass"
+         type="password"
+         placeholder="••••••••"
+         style="width:100%"
+       >
+
+       <br><br>
+
+       <button
+         onclick="registrar()"
+         style="width:100%"
+       >
+         Crear Nueva Cuenta
+       </button>
+
+     </div>
+
+   </div>
+
+ </div>
+ `;
+}
+
+function vistaInicio(){
+ const puntosActuales=calcularPuntosUsuario(usuarioActual.correo);
+ const participantes=Object.keys(usuarios()).length;
+ const primeros=obtenerClasificacionGeneral().slice(0,5);
+
+ return layout(`
+ <h2>¡Bienvenido a la Porra!</h2>
+ <p>Compite con tus amigos prediciendo los resultados del Mundial 2026.</p>
+ <div class="stats">
+ <div class="stat"><h3>Tu puntuación</h3><div class="big">${puntosActuales} pts</div></div>
+ <div class="stat"><h3>Participantes</h3><div class="big">${participantes}</div></div>
+ <div class="stat"><h3>Estado de cuenta</h3><div class="big">${usuarioActual.estado||"Activo"}</div></div>
+ <div class="stat"><h3>Resultado Exacto</h3><div class="big">+10 Pts</div></div>
+ <div class="stat"><h3>Ganador / Empate</h3><div class="big">+5 Pts</div></div>
+ <div class="stat"><h3>Pleno Grupo</h3><div class="big">+20 Pts</div></div>
+ <div class="stat"><h3>Aciertos Parciales</h3><div class="big">3/4=15p</div><p>2/4=10p | 1/4=5p</p></div>
+ <div class="stat"><h3>No Apostar Partido</h3><div class="big">-2 Pts</div><p>Solo jugados</p></div>
+ </div>
+
+ <div class="card table-wrap">
+  <h2>🏆 Clasificación general</h2>
+  <p>Todos los participantes compiten en la misma clasificación.</p>
+  <table>
+   <tr><th>Posición</th><th>Participante</th><th>Puntos</th></tr>
+   ${primeros.length ? primeros.map((u,i)=>`
+   <tr style="${u.correo===usuarioActual.correo?'background:#173b67':''}">
+    <td>${i+1}º</td>
+    <td>${u.apodo}${u.correo===usuarioActual.correo?' <span class="ok">(Tú)</span>':''}</td>
+    <td><b>${u.puntos} pts</b></td>
+   </tr>`).join("") : `
+   <tr><td colspan="3" style="text-align:center">Todavía no hay participantes.</td></tr>`}
+  </table>
+  <p style="text-align:center;margin-top:20px">
+   <button onclick="pantalla='clasificacion';render()">Ver clasificación completa</button>
+  </p>
+ </div>`);
+}
+
+function vistaPartidos(){
+ let html=`
+ <div class="card" style="text-align:center">
+ <h2>📅 Calendario Mundial 2026</h2>
+ <p>Fase de grupos en orden de juego. Cada partido se cierra 2 horas antes.</p>
+ </div>
+
+ <div class="card table-wrap">
+ <table>
+ <tr>
+ <th>📅 Fecha</th>
+ <th>🏆 Grupo</th>
+ <th>⚽ Partido y tu apuesta</th>
+ <th>🕒 Hora española</th>
+ <th>Estado</th>
+ </tr>`;
+
+ partidosGrupo.forEach(p=>{
+   let k=keyPartido(p);
+   let ga=getApuesta(k+"-local")||"_";
+   let gb=getApuesta(k+"-visitante")||"_";
+   let cerrado=partidoCerrado(p);
+   html+=`
+   <tr>
+   <td style="color:#93c5fd;font-weight:bold">${p[3]}</td>
+   <td style="color:#7dd3fc;font-weight:bold">${p[0]}</td>
+   <td>${p[1]} <b style="color:#38bdf8">${ga}</b> - <b style="color:#38bdf8">${gb}</b> ${p[2]}</td>
+   <td style="color:#fbbf24;font-weight:bold">${p[4]}</td>
+   <td>${cerrado?'<span class="closed">🔒 Cerrado</span>':'<span class="ok">🟢 Abierto</span>'}</td>
+   </tr>`;
+ });
+
+ html+=`
+ </table>
+ </div>
+
+ <div class="card" style="text-align:center">
+ <h3>🚧 Próximamente dieciseisavos</h3>
+ <p>Las eliminatorias estarán disponibles cuando termine la fase de grupos.</p>
+ </div>`;
+
+ return layout(html);
+}
+
+function tabsFases(){
+ return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:15px 0">
+ ${fases.map(f=>`<button class="${faseApuesta===f?'faseActiva':''}" onclick="faseApuesta='${f}';render()">${f}</button>`).join("")}
+ </div>`;
+}
+
+function tabsGrupos(){
+ return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:15px 0">
+ ${Object.keys(grupos).map(g=>`<button class="${grupoActual===g?'faseActiva':''}" onclick="grupoActual='${g}';render()">${g}</button>`).join("")}
+ </div>`;
+}
+
+function tercerosSeleccionados(){
+ return Object.keys(grupos).map(g=>getApuesta(g+"-pos3")).filter(x=>x);
+}
+
+function vistaApostar(){
+ let html=`<h2>Apostar</h2>${tabsFases()}`;
+
+ if(faseApuesta==="Grupos"){
+   html+=`<h3>Fase de grupos</h3>${tabsGrupos()}`;
+
+   let partidosDelGrupo=partidosGrupo.filter(p=>p[0]===grupoActual);
+   let equipos=grupos[grupoActual];
+   let tablaCerrada=tablaGrupoCerrada(grupoActual);
+   let cierre=cierreTablaGrupo(grupoActual);
+
+   html+=`
+   <div class="card">
+   <h3>${grupoActual}</h3>
+   <p class="${tablaCerrada?'closed':'ok'}">
+   La clasificación de este grupo se cierra el ${formatearCierre(cierre)}.
+   ${tablaCerrada ? "🔒 Cerrada" : "🟢 Abierta"}
+   </p>
+   <div class="grid"><div>`;
+
+   partidosDelGrupo.forEach(p=>{
+     let k=keyPartido(p);
+     let cerrado=partidoCerrado(p);
+     html+=`
+     <div class="match">
+     <b>${p[1]}</b>
+     <input class="score" type="number" min="0" ${cerrado?"disabled":""}
+     value="${getApuesta(k+'-local')}" onchange="setApuesta('${k}-local',this.value)">
+     -
+     <input class="score" type="number" min="0" ${cerrado?"disabled":""}
+     value="${getApuesta(k+'-visitante')}" onchange="setApuesta('${k}-visitante',this.value)">
+     <b>${p[2]}</b>
+     <span style="color:#93c5fd">(${p[3]} - ${p[4]})</span>
+     ${cerrado?'<span class="closed">🔒 Cerrado</span>':'<span class="ok">🟢 Abierto</span>'}
+     </div>`;
+   });
+
+   html+=`</div><div><h4>Tabla final del grupo</h4>`;
+
+   for(let pos=1;pos<=4;pos++){
+     html+=`${pos}º <select ${tablaCerrada?"disabled":""} onchange="setApuesta('${grupoActual}-pos${pos}',this.value)">
+     <option value="">Seleccionar</option>
+     ${equipos.map(x=>`<option ${getApuesta(grupoActual+'-pos'+pos)===x?'selected':''}>${x}</option>`).join("")}
+     </select><br>`;
+   }
+
+   html+=`</div></div></div>`;
+ }
+
+ else if(faseApuesta==="Mejores terceros"){
+   let terceros=tercerosSeleccionados();
+
+   html+=`
+   <div class="card">
+   <h3>Mejores terceros</h3>
+   <p>Selecciona los 8 terceros que crees que pasarán a dieciseisavos.</p>
+   <p>Solo aparecen equipos que hayas puesto como 3º en algún grupo.</p>
+   </div>`;
+
+   for(let i=1;i<=8;i++){
+     html+=`
+     <div class="card">
+     <h3>${i}º mejor tercero</h3>
+     <select onchange="setApuesta('mejor-tercero-${i}',this.value)">
+     <option value="">Seleccionar</option>
+     ${terceros.map(t=>`<option ${getApuesta('mejor-tercero-'+i)===t?'selected':''}>${t}</option>`).join("")}
+     </select>
+     </div>`;
+   }
+ }
+
+ else{
+   html+=`
+   <div class="card">
+   <h2>${faseApuesta}</h2>
+   <div style="background:#172554;border:1px solid #3b82f6;padding:25px;border-radius:12px;text-align:center">
+   <h3>🚧 Próximamente</h3>
+   <p>No disponible todavía.</p>
+   <p>Esta fase se activará cuando termine la fase de grupos y se conozcan los clasificados.</p>
+   </div>
+   </div>`;
+ }
+
+ html+=`<button onclick="alert('Apuestas guardadas automáticamente')">Guardar todo</button>`;
+ return layout(html);
+}
+
+function vistaMis(){
+ let html=`<h2>Mis Apuestas</h2>`;
+
+ Object.keys(grupos).forEach(g=>{
+   html+=`<div class="card"><h3>${g}</h3>`;
+
+   partidosGrupo.filter(p=>p[0]===g).forEach(p=>{
+     let k=keyPartido(p);
+     html+=`<p>${p[1]} ${getApuesta(k+'-local')||"_"} - ${getApuesta(k+'-visitante')||"_"} ${p[2]} <span style="color:#93c5fd">(${p[3]} - ${p[4]})</span></p>`;
+   });
+
+   html+=`<b>Tabla final:</b><ol>`;
+   for(let pos=1;pos<=4;pos++){
+     html+=`<li>${getApuesta(g+'-pos'+pos)||"Sin elegir"}</li>`;
+   }
+   html+=`</ol></div>`;
+ });
+
+ html+=`<div class="card"><h3>Mejores terceros</h3><ol>`;
+ for(let i=1;i<=8;i++){
+   html+=`<li>${getApuesta('mejor-tercero-'+i)||"Sin elegir"}</li>`;
+ }
+ html+=`</ol></div>`;
+
+ return layout(html);
+}
+
+function vistaResultados(){
+ let html=`
+ <div class="card" style="text-align:center">
+ <h2>📋 Resultados oficiales</h2>
+ <p>Introduce los marcadores reales y pulsa guardar.</p>
+ </div>
+
+ <div class="card table-wrap">
+ <table>
+ <tr>
+ <th>Fecha</th>
+ <th>Grupo</th>
+ <th>Partido</th>
+ <th>Resultado real</th>
+ </tr>`;
+
+ partidosGrupo.forEach(p=>{
+   let k=keyPartido(p);
+   html+=`
+   <tr>
+   <td>${p[3]} ${p[4]}</td>
+   <td>${p[0]}</td>
+   <td>${p[1]} vs ${p[2]}</td>
+   <td>
+   <input class="score" type="number" min="0" value="${getResultado(k+'-a')}" onchange="setResultado('${k}-a',this.value)">
+   -
+   <input class="score" type="number" min="0" value="${getResultado(k+'-b')}" onchange="setResultado('${k}-b',this.value)">
+   </td>
+   </tr>`;
+ });
+
+ html+=`
+ </table>
+ </div>
+
+ <div class="card" style="text-align:center">
+ <button onclick="alert('Resultados guardados')">💾 Guardar resultados</button>
+ </div>`;
+
+ return layout(html);
+}
+
+function vistaHabilitar(){
+ let html=`
+ <div class="card" style="text-align:center">
+ <h2>🔓 Habilitar apuestas</h2>
+ <p>Desde aquí puedes abrir manualmente partidos o clasificaciones de grupo. Si vuelves a tocar el botón, se cierra de nuevo según la hora normal.</p>
+ </div>
+
+ <div class="card table-wrap">
+ <h3>Clasificaciones de grupo</h3>
+ <table>
+ <tr><th>Grupo</th><th>Cierre normal</th><th>Estado</th><th>Acción</th></tr>`;
+
+ Object.keys(grupos).forEach(g=>{
+   const abierta=tablaForzadaAbierta(g);
+   const cerrada=tablaGrupoCerrada(g);
+   html+=`
+   <tr>
+   <td>${g}</td>
+   <td>${formatearCierre(cierreTablaGrupo(g))}</td>
+   <td>${abierta?'<span class="warn">🔓 Abierta manualmente</span>':(cerrada?'<span class="closed">🔒 Cerrada</span>':'<span class="ok">🟢 Abierta</span>')}</td>
+   <td><button onclick="toggleTabla('${g}')">${abierta?'Cerrar de nuevo':'Abrir manualmente'}</button></td>
+   </tr>`;
+ });
+
+ html+=`
+ </table>
+ </div>
+
+ <div class="card table-wrap">
+ <h3>Partidos</h3>
+ <table>
+ <tr><th>Fecha</th><th>Grupo</th><th>Partido</th><th>Cierre normal</th><th>Estado</th><th>Acción</th></tr>`;
+
+ partidosGrupo.forEach(p=>{
+   const k=keyPartido(p);
+   const abierta=partidoForzadoAbierto(k);
+   const cerrada=partidoCerrado(p);
+   html+=`
+   <tr>
+   <td>${p[3]} ${p[4]}</td>
+   <td>${p[0]}</td>
+   <td>${p[1]} vs ${p[2]}</td>
+   <td>${formatearCierre(cierrePartido(p))}</td>
+   <td>${abierta?'<span class="warn">🔓 Abierto manualmente</span>':(cerrada?'<span class="closed">🔒 Cerrado</span>':'<span class="ok">🟢 Abierto</span>')}</td>
+   <td><button onclick="togglePartido('${k}')">${abierta?'Cerrar de nuevo':'Abrir manualmente'}</button></td>
+   </tr>`;
+ });
+
+ html+=`
+ </table>
+ </div>`;
+
+ return layout(html);
+}
+
+function calcularPuntosUsuario(correo){
+ return clasificacionCache.find(u=>u.id===correo || u.correo===correo)?.puntos||0;
+}
+
+function obtenerClasificacionGeneral(){
+ return clasificacionCache;
+}
+
+function vistaClasificacion(){
+ let lista=obtenerClasificacionGeneral();
+
+ return layout(`
+ <div class="card">
+ <h2>🏆 Clasificación general</h2>
+ <p>Aquí aparecen los puntos de todos los participantes registrados.</p>
+ <p>Los puntos se actualizan automáticamente con los resultados oficiales introducidos por Admin.</p>
+
+ <table>
+ <tr>
+   <th>Posición</th>
+   <th>Apodo</th>
+   <th>Puntos</th>
+   <th>Estado</th>
+ </tr>
+
+ ${lista.length ? lista.map((u,i)=>`
+ <tr style="${usuarioActual && u.correo===usuarioActual.correo?'background:#173b67':''}">
+   <td>${i+1}º</td>
+   <td>${u.apodo}${usuarioActual && u.correo===usuarioActual.correo?' <span class="ok">(Tú)</span>':''}</td>
+   <td><b class="big" style="font-size:20px">${u.puntos} pts</b></td>
+   <td>${u.estado||"Activo"}</td>
+ </tr>
+ `).join("") : `
+ <tr>
+   <td colspan="4" style="text-align:center">Todavía no hay participantes registrados.</td>
+ </tr>
+ `}
+
+ </table>
+ </div>
+ `);
+}
+
+function render(){
+ const root=document.getElementById("app");
+
+ if(!root){
+   alert("No se encuentra el contenedor app");
+   return;
+ }
+
+ if(!usuarioActual){
+   root.innerHTML=vistaLogin();
+   return;
+ }
+
+ if(pantalla==="inicio")root.innerHTML=vistaInicio();
+ if(pantalla==="partidos")root.innerHTML=vistaPartidos();
+ if(pantalla==="apostar")root.innerHTML=vistaApostar();
+ if(pantalla==="mis")root.innerHTML=vistaMis();
+ if(pantalla==="clasificacion")root.innerHTML=vistaClasificacion();
+ if(pantalla==="resultados")root.innerHTML=vistaResultados();
+ if(pantalla==="habilitar")root.innerHTML=vistaHabilitar();
+}
+
+async function iniciarAplicacion(){
+ try{
+   const haySesion=await cargarUsuarioSesion();
+   if(haySesion){
+     pantalla=usuarioActual.admin?"resultados":"inicio";
+   }
+   render();
+ }catch(error){
+   console.error(error);
+   const root=document.getElementById("app");
+   root.innerHTML=`
+   <div class="error-box">
+    <h2>Falta activar la base de datos</h2>
+    <p>La página ya está conectada a Supabase, pero todavía hay que ejecutar el archivo de configuración SQL.</p>
+    <p>${String(error.message||error)}</p>
+   </div>`;
+ }
+}
+
+iniciarAplicacion();
+</script>
+</body>
+</html>
